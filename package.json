@@ -1,0 +1,46 @@
+{
+  "name": "@particle-academy/fancy-git",
+  "version": "0.1.0",
+  "description": "Framework-agnostic Git toolkit and normalized provider contracts for Node and TypeScript.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./types": {
+      "import": { "types": "./dist/types.d.ts", "default": "./dist/types.js" },
+      "require": { "types": "./dist/types.d.cts", "default": "./dist/types.cjs" }
+    },
+    "./testing": {
+      "import": { "types": "./dist/testing.d.ts", "default": "./dist/testing.js" },
+      "require": { "types": "./dist/testing.d.cts", "default": "./dist/testing.cjs" }
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Particle-Academy/fancy-git-js.git"
+  },
+  "homepage": "https://github.com/Particle-Academy/fancy-git-js#readme",
+  "bugs": { "url": "https://github.com/Particle-Academy/fancy-git-js/issues" },
+  "publishConfig": { "access": "public" },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}
