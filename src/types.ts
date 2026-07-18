@@ -15,6 +15,7 @@ export type GitErrorCode =
   | "rate_limited"
   | "cancelled"
   | "unsupported"
+  | "invalid_argument"
   | "unknown";
 
 export interface CommandOptions {

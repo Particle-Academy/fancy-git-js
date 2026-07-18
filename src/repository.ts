@@ -13,6 +13,7 @@ import type {
   WorkingTreeStatus,
 } from "./types.js";
 import { NodeProcessRunner, type ProcessRunner } from "./process.js";
+import { GitError } from "./errors.js";
 
 const FIELD = "\x1f";
 const RECORD = "\x1e";
@@ -34,6 +35,33 @@ function parseChange(code: string): FileChange["index"] {
     : "conflicted";
 }
 
+// These packages are agent-driven: refs and remotes can be supplied by an
+// untrusted caller, so a value git would parse as an option or a
+// command-executing transport helper must never reach it as a positional arg.
+
+/**
+ * Reject a value git would treat as a command-line option. Without this, a ref
+ * like `--output=/path` becomes `git log --output=<file>` (arbitrary file
+ * write) and a remote like `--upload-pack=<cmd>` injects a git flag.
+ */
+function assertNotOption(value: string, label: string): void {
+  if (value.startsWith("-")) {
+    throw new GitError("invalid_argument", `Refusing ${label} that resembles a command-line option: ${value}`);
+  }
+}
+
+/**
+ * Reject a remote using a git remote-helper transport that can execute a local
+ * command (`ext::sh -c …`, `fd::…`) — the classic git-wrapper RCE — on top of
+ * the option check.
+ */
+function assertSafeRemote(remote: string, label = "remote"): void {
+  assertNotOption(remote, label);
+  if (/^(ext|fd)::/i.test(remote)) {
+    throw new GitError("invalid_argument", `Refusing ${label} using a disallowed transport helper: ${remote}`);
+  }
+}
+
 export class GitRepository {
   readonly directory: string;
 
@@ -42,7 +70,14 @@ export class GitRepository {
   }
 
   private async git(args: string[], options?: CommandOptions): Promise<string> {
-    const result = await this.runner.run("git", ["-C", this.directory, "--no-pager", ...args], options);
+    // Defense in depth: disable the `ext::` remote helper for every invocation
+    // so a transport helper can never execute a command even if a future call
+    // path forgets to validate its remote.
+    const result = await this.runner.run(
+      "git",
+      ["-c", "protocol.ext.allow=never", "-C", this.directory, "--no-pager", ...args],
+      options,
+    );
     return result.stdout;
   }
 
@@ -98,7 +133,10 @@ export class GitRepository {
   async log(query: LogQuery = {}): Promise<Commit[]> {
     const format = [`%H`, `%h`, `%P`, `%an`, `%ae`, `%aI`, `%s`].join(FIELD) + RECORD;
     const args = ["log", `--format=${format}`, `--max-count=${query.limit ?? 50}`, `--skip=${query.skip ?? 0}`];
-    if (query.ref) args.push(query.ref);
+    if (query.ref) {
+      assertNotOption(query.ref, "log ref");
+      args.push(query.ref);
+    }
     const output = await this.git(args, query);
     return output.split(RECORD).filter((row) => row.trim()).map((row) => {
       const [id, shortId, parents, authorName, authorEmail, authoredAt, subject] = row.trim().split(FIELD);
@@ -117,8 +155,14 @@ export class GitRepository {
   async diff(query: DiffQuery = {}): Promise<Diff> {
     const args = ["diff", "--no-ext-diff", "--binary"];
     if (query.staged) args.push("--cached");
-    if (query.from) args.push(query.from);
-    if (query.to) args.push(query.to);
+    if (query.from) {
+      assertNotOption(query.from, "diff ref");
+      args.push(query.from);
+    }
+    if (query.to) {
+      assertNotOption(query.to, "diff ref");
+      args.push(query.to);
+    }
     if (query.paths?.length) args.push("--", ...query.paths);
     const patch = await this.git(args, query);
     const files = [...patch.matchAll(/^diff --git a\/(.+?) b\/(.+)$/gm)].map((match) => match[2]!);
@@ -151,22 +195,28 @@ export class GitRepository {
   }
 
   async checkout(target: string, options: MutationOptions = {}): Promise<void | OperationProposal> {
+    assertNotOption(target, "checkout target");
     if (options.pendingMode === "propose") return { operation: "checkout", arguments: { target }, summary: `Check out ${target}` };
     await this.git(["checkout", target], options);
   }
 
   async fetch(remote = "origin", options: MutationOptions = {}): Promise<void | OperationProposal> {
+    assertSafeRemote(remote);
     if (options.pendingMode === "propose") return { operation: "fetch", arguments: { remote }, summary: `Fetch ${remote}` };
     await this.git(["fetch", "--progress", remote], options);
   }
 
   async pull(remote?: string, branch?: string, options: MutationOptions = {}): Promise<void | OperationProposal> {
+    if (remote) assertSafeRemote(remote);
+    if (branch) assertNotOption(branch, "branch");
     const args = [remote, branch].filter((value): value is string => Boolean(value));
     if (options.pendingMode === "propose") return { operation: "pull", arguments: { remote: remote ?? null, branch: branch ?? null }, summary: "Pull remote changes" };
     await this.git(["pull", "--ff-only", ...args], options);
   }
 
   async push(remote = "origin", branch?: string, options: MutationOptions = {}): Promise<void | OperationProposal> {
+    assertSafeRemote(remote);
+    if (branch) assertNotOption(branch, "branch");
     if (options.pendingMode === "propose") return { operation: "push", arguments: { remote, branch: branch ?? null }, summary: `Push to ${remote}` };
     await this.git(["push", "--progress", remote, ...(branch ? [branch] : [])], options);
   }

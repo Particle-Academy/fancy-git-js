@@ -21,4 +21,41 @@ describe("GitRepository", () => {
     expect(proposal).toMatchObject({ operation: "stage" });
     expect(runner.calls).toHaveLength(0);
   });
+
+  describe("argument/transport injection guards", () => {
+    it("rejects an ext:: transport remote in fetch/pull/push (no git invoked)", async () => {
+      const runner = new StubProcessRunner();
+      const repo = new GitRepository(".", runner);
+      await expect(repo.fetch("ext::sh -c touch\\ pwned")).rejects.toThrow(/transport helper/);
+      await expect(repo.pull("fd::7")).rejects.toThrow(/transport helper/);
+      await expect(repo.push("ext::sh -c id")).rejects.toThrow(/transport helper/);
+      expect(runner.calls).toHaveLength(0);
+    });
+
+    it("rejects option-like remotes and refs (no git invoked)", async () => {
+      const runner = new StubProcessRunner();
+      const repo = new GitRepository(".", runner);
+      await expect(repo.fetch("--upload-pack=touch pwned")).rejects.toThrow(/command-line option/);
+      await expect(repo.push("--receive-pack=x")).rejects.toThrow(/command-line option/);
+      await expect(repo.log({ ref: "--output=/tmp/x" })).rejects.toThrow(/command-line option/);
+      await expect(repo.diff({ from: "--output=/tmp/x" })).rejects.toThrow(/command-line option/);
+      await expect(repo.checkout("--orphan")).rejects.toThrow(/command-line option/);
+      expect(runner.calls).toHaveLength(0);
+    });
+
+    it("allows a normal remote and hardens git against the ext transport", async () => {
+      const runner = new StubProcessRunner([""]);
+      await new GitRepository(".", runner).fetch("origin");
+      expect(runner.calls[0]!.args).toEqual([
+        "-c",
+        "protocol.ext.allow=never",
+        "-C",
+        expect.any(String),
+        "--no-pager",
+        "fetch",
+        "--progress",
+        "origin",
+      ]);
+    });
+  });
 });
