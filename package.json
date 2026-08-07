@@ -1,6 +1,6 @@
 {
   "name": "@particle-academy/fancy-git",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic Git toolkit and normalized provider contracts for Node and TypeScript.",
   "license": "MIT",
   "type": "module",
@@ -46,7 +46,7 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsup",
