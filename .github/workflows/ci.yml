@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege, matching every other repo in the suite. Without this block a
+# job inherits the repository default, which can be write-all -- so a compromised
+# dependency in `npm ci` would run with a token that can push. This workflow only
+# ever reads the checkout. (CodeQL actions/missing-workflow-permissions #1; this
+# repo was hand-written after the standard CI rollout, which is why it was the
+# only one of 58 missing it.)
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
