@@ -13,6 +13,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-13
+
+### Fixed
+
+- **Error-message redaction no longer blanks ordinary provider text.** It removed
+  the word after any "token", "password" or "Bearer", so GitLab's
+  "Token scope insufficient" reached you as "[REDACTED] insufficient", and
+  "use a token instead of a password" lost half its words. Redaction now matches
+  credentials by their shape or their context instead.
+
+  **What you must do:** nothing, unless you matched on the old output. A redacted
+  header now keeps its name and scheme — `Authorization: Bearer [REDACTED]`
+  rather than `Authorization: [REDACTED]` — so a test asserting the old string
+  needs the new one.
+
+### Security
+
+- **Redaction now catches secrets it used to let through:** a `PRIVATE-TOKEN:`,
+  `JOB-TOKEN:` or `DEPLOY-TOKEN:` header whose value has no `glpat-` prefix,
+  `Authorization: Basic …`, credentials in a query string or assignment
+  (`private_token=`, `access_token=`, `password=`, `client_secret=`), GitHub
+  fine-grained PATs (`github_pat_…`), and GitLab's other token kinds (`glcbt-`,
+  `gldt-`, `gloas-`, `glrt-`, `glptt-`, `glft-` and the rest). Classic GitHub
+  tokens, `glpat-`, bearer values and URL userinfo are still caught.
+
+  **What you must do:** nothing. The cases are pinned in
+  `tests/fixtures/redaction-cases.json`, shared byte-for-byte with
+  `particle-academy/fancy-git` 0.3.1 so the PHP and Node runtimes redact
+  identically.
+
 ## [0.3.0] — 2026-08-07
 
 ### Changed

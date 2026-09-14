@@ -1,0 +1,36 @@
+{
+  "_note": "Error-message redaction cases, shared byte-for-byte by fancy-git-js (tests/redaction.test.ts) and fancy-git-php (tests/RedactionTest.php). Change one copy, change both, in the same session: the two runtimes must redact identically. `{}` inside a string is removed before use; it splits token-shaped fakes so secret scanners do not flag this file. Every token here is fake.",
+  "redacts": [
+    { "id": "github-classic-pat", "input": "remote: Invalid credentials for gh{}p_FAKEfakeFAKEfakeFAKEfake1234 used", "expected": "remote: Invalid credentials for [REDACTED] used" },
+    { "id": "github-oauth-token", "input": "oauth gh{}o_FAKEfakeFAKEfakeFAKEfake1234 was revoked", "expected": "oauth [REDACTED] was revoked" },
+    { "id": "github-fine-grained-pat", "input": "credential github_{}pat_11FAKEFAKE0fakefakeFAKE_fakefakeFAKEfake1234 denied", "expected": "credential [REDACTED] denied" },
+    { "id": "gitlab-pat", "input": "401 Unauthorized: gl{}pat-FAKEfakeFAKEfake1234", "expected": "401 Unauthorized: [REDACTED]" },
+    { "id": "gitlab-ci-job-token", "input": "job gl{}cbt-FAKEfakeFAKEfake12345678 rejected", "expected": "job [REDACTED] rejected" },
+    { "id": "gitlab-deploy-token", "input": "deploy gl{}dt-FAKEfakeFAKEfake12345678 expired", "expected": "deploy [REDACTED] expired" },
+    { "id": "authorization-bearer-header", "input": "> Authorization: Bearer abc.def-ghi_jkl", "expected": "> Authorization: Bearer [REDACTED]" },
+    { "id": "authorization-bearer-header-lowercase", "input": "authorization: bearer hunter", "expected": "authorization: bearer [REDACTED]" },
+    { "id": "authorization-token-header", "input": "Authorization: token s3cr3t-value", "expected": "Authorization: token [REDACTED]" },
+    { "id": "authorization-basic-header", "input": "Authorization: Basic dXNlcjpwYXNzd29yZA==", "expected": "Authorization: Basic [REDACTED]" },
+    { "id": "private-token-header", "input": "PRIVATE-TOKEN: abc123secret", "expected": "PRIVATE-TOKEN: [REDACTED]" },
+    { "id": "private-token-header-with-gitlab-pat", "input": "sent PRIVATE-TOKEN: gl{}pat-FAKEfakeFAKEfake1234 to the API", "expected": "sent PRIVATE-TOKEN: [REDACTED] to the API" },
+    { "id": "job-token-header", "input": "JOB-TOKEN: 0123456789abcdef", "expected": "JOB-TOKEN: [REDACTED]" },
+    { "id": "bearer-value-in-prose", "input": "retrying with Bearer eyJhbGciOiJIUzI1NiJ9.e30.FAKEsig123", "expected": "retrying with Bearer [REDACTED]" },
+    { "id": "private-token-query-parameter", "input": "GET https://gitlab.example.com/api/v4/projects?private_token=abc123secret&page=2", "expected": "GET https://gitlab.example.com/api/v4/projects?private_token=[REDACTED]&page=2" },
+    { "id": "access-token-query-parameter", "input": "https://example.test/callback?access_token=abc123&state=x", "expected": "https://example.test/callback?access_token=[REDACTED]&state=x" },
+    { "id": "password-assignment", "input": "password=hunter2", "expected": "password=[REDACTED]" },
+    { "id": "url-userinfo", "input": "fatal: unable to access 'https://oauth2:s3cret@gitlab.com/group/app.git/'", "expected": "fatal: unable to access '[REDACTED]gitlab.com/group/app.git/'" }
+  ],
+  "keeps": [
+    { "id": "gitlab-token-scope", "input": "Token scope insufficient" },
+    { "id": "gitlab-oauth-expired", "input": "401 Unauthorized - Token is expired. You can either do re-authorization or token refresh." },
+    { "id": "gitlab-insufficient-scope", "input": "insufficient_scope: The request requires higher privileges than provided by the access token." },
+    { "id": "gitlab-http-basic-denied", "input": "remote: HTTP Basic: Access denied. If a password was provided for Git authentication, the password was incorrect or you're required to use a token instead of a password." },
+    { "id": "github-password-auth-removed", "input": "remote: Support for password authentication was removed. Please use a personal access token instead." },
+    { "id": "git-invalid-username-or-password", "input": "remote: Invalid username or password." },
+    { "id": "bearer-token-required", "input": "Bearer token required" },
+    { "id": "token-revoked", "input": "The token you provided has been revoked" },
+    { "id": "personal-access-token-scopes", "input": "Personal access token scopes: read_api, api" },
+    { "id": "pathspec-with-password", "input": "error: pathspec 'password reset flow' did not match any file(s) known to git" },
+    { "id": "branch-named-token", "input": "fatal: couldn't find remote ref refs/heads/token-refresh" }
+  ]
+}
