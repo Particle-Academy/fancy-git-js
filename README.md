@@ -1,5 +1,7 @@
 # Fancy Git
 
+[![Fancified](art/fancified.svg)](https://particle.academy)
+
 Framework-agnostic TypeScript contracts and local Git operations for the Fancy
 Git package family.
 
