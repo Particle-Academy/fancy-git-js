@@ -153,7 +153,7 @@ describe.skipIf(!isWindows)("a planted git.exe on Windows", () => {
     process.chdir(dir);
 
     const info = await new GitRepository(process.cwd()).info();
-    expect(realpathSync(info.root)).toBe(realpathSync(dir));
+    expect(realpathSync.native(info.root)).toBe(realpathSync.native(dir));
     expect(markersIn(dir)).toEqual([]);
   });
 
@@ -238,7 +238,7 @@ describe.skipIf(!isWindows)("a planted git.exe on Windows", () => {
     };
 
     const info = await new GitRepository(dir, host).info();
-    expect(realpathSync(info.root)).toBe(realpathSync(dir));
+    expect(realpathSync.native(info.root)).toBe(realpathSync.native(dir));
     expect(new Set(seen)).toEqual(new Set(["git"]));
     expect(markersIn(dir)).toEqual([]);
   });
@@ -287,7 +287,7 @@ describe.skipIf(isWindows)("a planted git on POSIX", () => {
     process.chdir(dir);
 
     const info = await new GitRepository(process.cwd()).info();
-    expect(realpathSync(info.root)).toBe(realpathSync(dir));
+    expect(realpathSync.native(info.root)).toBe(realpathSync.native(dir));
   });
 
   it("fails closed when git is not on PATH", async () => {
