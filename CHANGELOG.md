@@ -13,6 +13,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Text in a commit can no longer forge fields or commits in `log()`.** An author
+  name or a subject can contain the separators `log()` used, so a repository could
+  add a row with an id of its choosing, or shift a commit's fields so that its
+  `authorEmail` and `authoredAt` held text of its choosing. A host displaying that
+  history showed the forged values. Fields are now separated by NUL, which git does
+  not print from a commit's text, and such text stays in the field it was written
+  in. Matches `particle-academy/fancy-git` 0.4.1.
+
+  **What you must do:** nothing, unless you assert on the exact command through a
+  custom `ProcessRunner`, or feed `log()` canned output, in which case the
+  `--format` argument has changed and fields are now NUL-separated.
+
+### Fixed
+
+- **`log()` no longer trims a subject.** A subject ending in a vertical tab, a form
+  feed, a non-breaking space or similar lost that character, and one holding a
+  separator was cut short. Records now split on the separator and its newline, and
+  nothing else is trimmed. `branches()` splits the same way. CRLF output and a final
+  record without its newline are accepted.
+
+  **What you must do:** nothing.
+
+- **Output that is not a record is now a `GitError` in `log()` and `branches()`.**
+  It used to become a row of `undefined` fields, or a `TypeError` in `branches()`.
+  git does not print such output, so this only reaches a custom `ProcessRunner`.
+
+  **What you must do:** nothing.
+
+- `tests/real-git-output.test.ts` runs `log`, `branches`, `status`, `info` and `diff`
+  against real repositories. `status()` was checked for the loss of a file named `0`
+  that `fancy-git-php` had, and did not have it here; the case stays pinned.
+
 ## [0.3.2] - 2026-11-02
 
 ### Fixed

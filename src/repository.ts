@@ -18,6 +18,35 @@ import { GitError } from "./errors.js";
 const FIELD = "\x1f";
 const RECORD = "\x1e";
 
+/**
+ * log() prints text a repository's authors chose, and an author name or a subject
+ * can hold FIELD or RECORD, so a commit could forge fields. git never prints NUL
+ * from a commit's text. It spells it %x00 in the format, since an argument cannot
+ * carry one. Ref names cannot hold control characters, so branches() keeps FIELD.
+ */
+const LOG_FIELD = "\0";
+
+/**
+ * git ends every line of a --format with its own newline, so a record really ends
+ * in RECORD plus a newline. The pair is unambiguous, because the only free text
+ * before it is single-line. Nothing else is trimmed, so a record's own text
+ * survives. A runner may hand back CRLF, or a final record without its newline.
+ */
+function records(output: string): string[] {
+  const normalized = output.replaceAll(`${RECORD}\r\n`, `${RECORD}\n`);
+  const terminated = normalized.endsWith(RECORD) ? `${normalized}\n` : normalized;
+  return terminated.split(`${RECORD}\n`).filter((record) => record !== "");
+}
+
+/** Exactly `count` fields, the last keeping any separator of its own. */
+function fields(record: string, separator: string, count: number): string[] {
+  const parts = record.split(separator);
+  if (parts.length < count) {
+    throw new GitError("unknown", `Unexpected git output: expected ${count} fields in a record, found ${parts.length}.`);
+  }
+  return [...parts.slice(0, count - 1), parts.slice(count - 1).join(separator)];
+}
+
 const changeKind: Record<string, FileChange["index"]> = {
   ".": null,
   "A": "added",
@@ -131,15 +160,15 @@ export class GitRepository {
   }
 
   async log(query: LogQuery = {}): Promise<Commit[]> {
-    const format = [`%H`, `%h`, `%P`, `%an`, `%ae`, `%aI`, `%s`].join(FIELD) + RECORD;
+    const format = [`%H`, `%h`, `%P`, `%an`, `%ae`, `%aI`, `%s`].join("%x00") + RECORD;
     const args = ["log", `--format=${format}`, `--max-count=${query.limit ?? 50}`, `--skip=${query.skip ?? 0}`];
     if (query.ref) {
       assertNotOption(query.ref, "log ref");
       args.push(query.ref);
     }
     const output = await this.git(args, query);
-    return output.split(RECORD).filter((row) => row.trim()).map((row) => {
-      const [id, shortId, parents, authorName, authorEmail, authoredAt, subject] = row.trim().split(FIELD);
+    return records(output).map((record) => {
+      const [id, shortId, parents, authorName, authorEmail, authoredAt, subject] = fields(record, LOG_FIELD, 7);
       return {
         id: id!,
         shortId: shortId!,
@@ -172,8 +201,8 @@ export class GitRepository {
   async branches(options?: CommandOptions): Promise<Branch[]> {
     const format = ["%(refname:short)", "%(HEAD)", "%(objectname)", "%(upstream:short)", "%(refname)"].join(FIELD) + RECORD;
     const output = await this.git(["for-each-ref", `--format=${format}`, "refs/heads", "refs/remotes"], options);
-    return output.split(RECORD).filter((row) => row.trim()).map((row) => {
-      const [name, head, target, upstream, refname] = row.trim().split(FIELD);
+    return records(output).map((record) => {
+      const [name, head, target, upstream, refname] = fields(record, FIELD, 5);
       return { name: name!, current: head === "*", remote: refname!.startsWith("refs/remotes/"), target: target!, upstream: upstream || undefined };
     });
   }
