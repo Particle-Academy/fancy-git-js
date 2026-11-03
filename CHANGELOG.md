@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-02
+
 ### Security
 
 - **Text in a commit can no longer forge fields or commits in `log()`.** An author
