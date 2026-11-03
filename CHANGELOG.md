@@ -19,6 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **`NodeProcessRunner` now runs `git` by absolute path.** On Windows a bare `git`
+  could run a same-named executable from the current directory instead of the
+  real program, so a repository could decide what ran when a process was started
+  inside it. The runner now finds `git` on `PATH` once per process, reading only
+  absolute entries, and never the current directory or the repository. If it
+  finds none it fails with a `GitError` (`not_found`) rather than falling back.
+  A batch-file `git` was already never run by this package and still is not; the
+  error now says so when it is all that `PATH` holds.
+
+  **What you must do:** nothing, unless the only `git` you have is in the current
+  directory or on a relative `PATH` entry. Then add it to `PATH` by absolute path,
+  or pass a `ProcessRunner` that calls your own copy. A custom `ProcessRunner`
+  keeps working unchanged: it still receives the name `git`.
+
 - Update Vitest to 4.1.12 for security fixes; dev toolchain only, nothing to do.
 
 - `source-map-js` is pinned forward to `^1.2.2` via `overrides`. Versions up to
