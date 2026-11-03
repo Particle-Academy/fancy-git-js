@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import type { CommandOptions } from "./types.js";
 import { GitError, classifyGitError } from "./errors.js";
+import { resolveExecutable } from "./executable.js";
 
 export interface ProcessResult {
   stdout: string;
@@ -14,8 +15,11 @@ export interface ProcessRunner {
 
 export class NodeProcessRunner implements ProcessRunner {
   async run(command: string, args: string[], options: CommandOptions = {}): Promise<ProcessResult> {
+    // A bare name would let Windows pick a same-named file in the working
+    // directory; see executable.ts. A host's own runner never comes through here.
+    const executable = resolveExecutable(command);
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { shell: false, windowsHide: true });
+      const child = spawn(executable, args, { shell: false, windowsHide: true });
       let stdout = "";
       let stderr = "";
       let timedOut = false;
