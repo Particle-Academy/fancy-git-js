@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`CHANGELOG.md` is now in the published tarball.** `files` did not list it, so
+  npm never shipped it.
+
+  **What you must do:** nothing.
+
 - **`log()` no longer trims a subject.** A subject ending in a vertical tab, a form
   feed, a non-breaking space or similar lost that character, and one holding a
   separator was cut short. Records now split on the separator and its newline, and
