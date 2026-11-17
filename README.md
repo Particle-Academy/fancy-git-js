@@ -21,3 +21,10 @@ with code `not_found`. To use a particular git, give `GitRepository` your own
 Mutations support `{ pendingMode: "propose" }`, returning a JSON-friendly
 proposal without changing the repository. Provider integrations are separate
 packages so the core has no GitHub, GitLab, or Bitbucket SDK dependency.
+
+<!-- fancy-agents-note:start -->
+> **For agents.** Every Fancy package, this one included, is listed on the
+> Fancy MCP catalog server at `https://ui.particle.academy/mcp` (streamable HTTP, no API key;
+> MCP id `fancy-ui`), with install commands and docs. How an agent installs
+> and uses this package is in [AGENTS.md](https://github.com/Particle-Academy/fancy-git-js/blob/main/AGENTS.md).
+<!-- fancy-agents-note:end -->
